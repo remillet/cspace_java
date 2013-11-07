@@ -36,10 +36,6 @@
 # Copyright 2013 Your name here, unless otherwise noted.
 #
 class cspace_java {
-
-  exec { 'Hello' :
-    command => '/bin/echo howdy software-properties-common  >/tmp/howdy.txt',
-  }
   
   exec { 'apt-get-update' :
     command => '/usr/bin/apt-get -y update',
@@ -76,5 +72,3 @@ class cspace_java {
   }
   
 }
-
-include cspace_java
