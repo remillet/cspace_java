@@ -35,40 +35,75 @@
 #
 # Copyright 2013 Your name here, unless otherwise noted.
 #
-class cspace_java {
-  
-  exec { 'apt-get-update' :
-    command => '/usr/bin/apt-get -y update',
-  }
-  
-  package { 'software-properties-common' :
-    ensure => installed,
-    require => Exec[apt-get-update],
-  }
+include cspace_environment::execpaths
+include cspace_environment::osfamily
 
-  package { 'python-software-properties' :
-    ensure => installed,
-    require => Package[software-properties-common],
-  }
+class cspace_java {
+	
+	$os_family = $cspace_environment::osfamily::os_family
+	$linux_exec_paths = $cspace_environment::execpaths::linux_default_exec_paths
+	$osx_exec_paths = $cspace_environment::execpaths::osx_default_exec_paths
+
+	case $os_family {
+		
+	    RedHat: {
+	    }
+		
+	    Debian: {
+			
+			$exec_paths = $linux_exec_paths
+			
+		    exec { 'Update apt-get to reflect current packages and versions' :
+		      command => 'apt-get -y update',
+	  	      path    => $exec_paths,
+		    }
   
-  exec { 'add-apt-repository' :
-    command => '/usr/bin/add-apt-repository ppa:webupd8team/java',
-    require => Package[python-software-properties],
-  }
+		    package { 'Install software-properties-common' :
+		      ensure  => installed,
+			  name    => 'software-properties-common',
+		      require => Exec[ 'Update apt-get to reflect current packages and versions' ],
+		    }
+
+		    package { 'Install python-software-properties' :
+		      ensure  => installed,
+			  name    => 'python-software-properties',
+		      require => Package[ 'Install software-properties-common' ],
+		    }
   
-  exec { 'apt-get-update-webupd8team' :
-    command => '/usr/bin/apt-get -y update',    
-    require => Exec[add-apt-repository],
-  }
+		    exec { 'Add an APT repository providing Oracle Java packages' :
+		      command => 'add-apt-repository ppa:webupd8team/java',
+	  	      path    => $exec_paths,
+		      require => Package[ 'Install python-software-properties' ],
+		    }
   
-  exec { 'accept-oracle-license' :
-    command => '/bin/echo oracle-java7-installer shared/accepted-oracle-license-v1-1 select true | /usr/bin/debconf-set-selections',
-    require => Exec[apt-get-update-webupd8team],
-  }
+		    exec { 'Update apt-get to reflect the new repository' :
+		      command => 'apt-get -y update',    
+	  	      path    => $exec_paths,
+		      require => Exec[ 'Add an APT repository providing Oracle Java packages' ],
+		    }
   
-  package { 'oracle-jdk7-installer' :
-    ensure => installed,
-    require => Exec[accept-oracle-license],
-  }
+            # Perform unattended acceptance of the Oracle license agreement and
+			# store this acceptance in a configuration file.
+		    exec { 'Accept Oracle license agreement' :
+		      command => 'echo oracle-java7-installer shared/accepted-oracle-license-v1-1 select true | debconf-set-selections',
+	  	      path    => $exec_paths,
+		      require => Exec[ 'Update apt-get to reflect the new repository' ],
+		    }
   
+		    package { 'Install Oracle Java 7' :
+		      ensure  => installed,
+			  name    => 'oracle-jdk7-installer',
+		      require => Exec[ 'Accept Oracle license agreement' ],
+		    }
+
+	    }
+		
+	    # OS X
+	    darwin: {
+	    }
+		
+	    default: {
+	    }
+  
+    }
 }
