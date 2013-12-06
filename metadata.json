@@ -1,13 +1,13 @@
 {
   "name": "cspace-cspace_java",
-  "version": "0.1.0",
-  "summary": "UNKNOWN",
-  "author": "cspace",
-  "description": "UNKNOWN",
-  "dependencies": [],
+  "version": "4.1 alpha",
+  "summary": "CollectionSpace Oracle Java Prerequisite",
+  "author": "CollectionSpace",
+  "description": "Ensures the availability of Oracle Java 7, a prerequisite for a CollectionSpace server installation.",
+  "dependencies": [ "cspace-cspace_environment" ],
   "types": [],
   "checksums": {},
-  "source": "UNKNOWN",
-  "project_page": "UNKNOWN",
-  "license": "Apache License, Version 2.0"
+  "source": "https://github.com/cspace-puppet/cspace_java.git",
+  "project_page": "http://wiki.collectionspace.org",
+  "license": " Educational Community License, Version 2.0"
 }

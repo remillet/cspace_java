@@ -1,6 +1,6 @@
 # == Class: cspace_java
 #
-# Full description of class cspace_java here.
+# Manages the availability of Oracle Java 7, a prerequisite for a CollectionSpace server installation.
 #
 # === Parameters
 #
@@ -24,16 +24,16 @@
 # === Examples
 #
 #  class { cspace_java:
-#    servers => [ 'pool.ntp.org', 'ntp.local.company.com' ],
 #  }
 #
 # === Authors
 #
-# Author Name <richard.millet@berkeley.edu>
+# Richard Millet <richard.millet@berkeley.edu>
+# Aron Roberts <aron@socrates.berkeley.edu>
 #
 # === Copyright
 #
-# Copyright 2013 Your name here, unless otherwise noted.
+# Copyright © 2013 The Regents of the University of California
 #
 include cspace_environment::execpaths
 include cspace_environment::osfamily
@@ -47,6 +47,8 @@ class cspace_java {
 	case $os_family {
 		
 	    RedHat: {
+			# See in part:
+			# http://www.java.com/en/download/help/linux_x64rpm_install.xml
 	    }
 		
 	    Debian: {
