@@ -34,8 +34,7 @@
 #
 # === Copyright
 #
-# Copyright © 2013 The Regents of the University of California
-#
+# Copyright 2013 The Regents of the University of California
 
 include cspace_environment::execpaths
 include cspace_environment::osfamily
