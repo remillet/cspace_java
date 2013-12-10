@@ -42,13 +42,14 @@ include cspace_environment::osfamily
 
 class cspace_java {
 
-  $os_family = $cspace_environment::osfamily::os_family
+  $os_family        = $cspace_environment::osfamily::os_family
   $linux_exec_paths = $cspace_environment::execpaths::linux_default_exec_paths
-  $osx_exec_paths = $cspace_environment::execpaths::osx_default_exec_paths
+  $osx_exec_paths   = $cspace_environment::execpaths::osx_default_exec_paths
 
   case $os_family {
     
     RedHat: {
+      $exec_paths = $linux_exec_paths
       # See in part:
       # http://www.java.com/en/download/help/linux_x64rpm_install.xml
     }
@@ -104,6 +105,7 @@ class cspace_java {
     
     # OS X
     darwin: {
+      $exec_paths = $osx_exec_paths
     }
     
     default: {
