@@ -107,6 +107,10 @@ class cspace_java {
       $exec_paths = $osx_exec_paths
     }
     
+    # Microsoft Windows
+    windows: {
+    }
+    
     default: {
     }
   
