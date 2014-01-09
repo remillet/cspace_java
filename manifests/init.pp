@@ -81,10 +81,10 @@ class cspace_java {
       # conventions change, either for Java version numbers or for URLs on
       # Oracle's Java SE downloads website.
       # E.g. gives JDK version '7u45' for Java version 7, update 45
-      $jdk_version         = "${java_version}u${update_number}'
+      $jdk_version         = "${java_version}u${update_number}"
       # E.g. gives build version 'b18' for build 18
       $build_version       = 'b${build_number}'
-      $jdk_path_segment    = "${jdk_version}-${build_number}"
+      $jdk_path_segment    = "${jdk_version}-${build_version}"
       $jdk_filename_prefix = "jdk-${jdk_version}"
       $os_bits = $cspace_environment::osbits::os_bits
       if $os_bits == '64-bit' {
