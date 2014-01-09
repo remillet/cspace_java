@@ -1,7 +1,7 @@
 # == Class: cspace_java
 #
-# Manages the availability of Oracle Java 7, a prerequisite for a
-# CollectionSpace server installation.
+# Manages the availability of Oracle Java SE (Standard Edition) version 7
+# Java Development Kit (JDK), a prerequisite for a CollectionSpace server installation.
 #
 # === Parameters
 #
@@ -49,6 +49,10 @@ class cspace_java {
   $osx_exec_paths   = $cspace_environment::execpaths::osx_default_exec_paths
   $temp_dir         = $cspace_environment::tempdir::system_temp_directory
   
+  # ---------------------------------------------------------
+  # Install Oracle Java
+  # ---------------------------------------------------------
+  
   case $os_family {
     
     RedHat: {
@@ -61,17 +65,25 @@ class cspace_java {
         path      => $exec_paths,
       }
       
-      # The following values MUST be manually updated when the Java JDK is updated.
+      # The following values for Java version, update number, and build number
+      # MUST be manually updated when the Java JDK is updated.
       #
       # TODO: Investigate whether it may be possible to avoid hard-coding
       # specific versions below via the technique discussed at
       # http://stackoverflow.com/a/20705933 (requires Oracle support account)
       # or any symlinked URLs, such as (the posited, perhaps now obsolete)
       # http://download.oracle.com/otn-pub/java/jdk/7/jdk-7-linux-x64.tar.gz
-      $jdk_version         = '7u45'
-      $build_version       = 'b18'
-      # Naming conventions currently used by Oracle; this code will break
-      # and require modification if these conventions change:
+      $java_version        = '7'
+      $update_number       = '45'
+      $build_number        = '18'
+      # The following reflects naming conventions currently used by Oracle.
+      # This code will break and require modification if any of the following
+      # conventions change, either for Java version numbers or for URLs on
+      # Oracle's Java SE downloads website.
+      # E.g. gives JDK version '7u45' for Java version 7, update 45
+      $jdk_version         = "${java_version}u${update_number}'
+      # E.g. gives build version 'b18' for build 18
+      $build_version       = 'b${build_number}'
       $jdk_path_segment    = "${jdk_version}-${build_version}"
       $jdk_filename_prefix = "jdk-${jdk_version}"
       $os_bits = $cspace_environment::osbits::os_bits
@@ -86,6 +98,10 @@ class cspace_java {
       }
       
       # Per http://stackoverflow.com/a/10959815
+      # Note that the contents of the cookie below, which helps serve as
+      # validation that this automated process has its users' consent to
+      # agree to Oracle's Java SE license terms, as well as that validation
+      # process in general, is subject to change on Oracle's part.
       $download_cmd = join(
         [
           "wget",
@@ -95,7 +111,7 @@ class cspace_java {
           " --no-cookies",
           " --timeout 300", # 5 minutes
           " --tries 2",
-          " --verbose=off", # alternative: --quiet
+          " --verbose=off",
         ]
       )
  
@@ -185,5 +201,41 @@ class cspace_java {
     }
   
   } # end case
+  
+  # ---------------------------------------------------------
+  # Add key Java commands to the Linux 'alternatives' system
+  # ---------------------------------------------------------
+  
+  # TODO: Identify whether building on the existing alternatives
+  # package at http://puppetforge.com/adrien/alternatives may
+  # provide advantages over Exec-based management here.
+  
+  case $os_family {
+    
+    # TODO: Verify whether the installation paths are identical in Debian-based
+    # distros to those in RedHat-based distros.
+    
+    RedHat, Debian: {
+      # RedHat-based systems appear to alias the executable file 'alternatives'
+      # to 'update-alternatives', perhaps for cross-platform compatibility.
+      $alternatives_cmd = '/usr/sbin/update-alternatives'
+      $default_priority = '20000'
+      $target_dir       = '/usr/bin'
+      $source_dir       = '/usr/java/latest/bin'
+      
+      # See http://stackoverflow.com/a/6403457 for this looping technique
+      define alternatives {
+        Exec { 'Install alternatives':
+          command => "${alternatives_cmd} --install ${target_dir}/${title} ${title} ${source_dir}/${title} ${default_priority}"
+        }
+      }
+      alternatives { [ 'java', 'javac', 'jar' ]:
+      }
+  
+    }
+    
+    default: {
+      # Do nothing under OS families that don't use this system
+    }
   
 }
