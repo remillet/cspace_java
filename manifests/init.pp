@@ -37,7 +37,9 @@
 # Copyright 2013 The Regents of the University of California
 
 include cspace_environment::execpaths
+include cspace_environment::osbits
 include cspace_environment::osfamily
+include stdlib # for join()
 
 class cspace_java {
 
@@ -51,6 +53,50 @@ class cspace_java {
       $exec_paths = $linux_exec_paths
       # See in part:
       # http://www.java.com/en/download/help/linux_x64rpm_install.xml
+      
+      exec { 'Find wget executable':
+        command   => '/bin/sh -c "command -v wget"',
+        path      => $exec_paths,
+        logoutput => true,
+        before    => Notify[ 'Creating source directory' ],
+      }
+      
+      
+      # The following value MUST be manually updated when the Java JDK is updated.
+      #
+      # TODO: Investigate whether it may be possible to avoid hard-coding
+      # specific versions below via the technique discussed at
+      # http://stackoverflow.com/a/20705933 (requires Oracle support account)
+      # or any symlinked URLs, such as (the posited, perhaps now obsolete)
+      # http://download.oracle.com/otn-pub/java/jdk/7/jdk-7-linux-x64.tar.gz
+      $jdk_path_segment = '7u45-b18/jdk-7u45'
+      $os_bits          = $cspace_environment::osbits::os_bits
+      if $os_bits == '64-bit' {
+        $jdk_path = "${jdk_path_segment}-linux-x64.rpm"
+      } elsif $os_bits == '32-bit' {
+        $jdk_path = "${jdk_path_segment}-linux-i586.rpm"
+      } else {
+        fail( 'Could not select Oracle Java RPM file for download: unknown value for OS virtual address space' )
+      }
+      
+      # Per http://stackoverflow.com/a/10959815
+      $download_cmd = join(
+        [
+          "wget",
+          " --no-cookies",
+          " --no-check-certificate",
+          " --header \"Cookie: gpw_e24=http%3A%2F%2Fwww.oracle.com\"",
+          " http://download.oracle.com/otn-pub/java/jdk/${jdk_path}",
+        ]
+      )
+ 
+      exec { 'Download Oracle Java RPM package':
+        command   => $download_cmd,
+        path      => $exec_paths,
+        logoutput => true,
+        require   => Exec[ 'Find wget executable' ],
+      }
+      
     }
     
     Debian: {
