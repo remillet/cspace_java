@@ -49,6 +49,14 @@ class cspace_java {
   $osx_exec_paths   = $cspace_environment::execpaths::osx_default_exec_paths
   $temp_dir         = $cspace_environment::tempdir::system_temp_directory
   
+  # Define a custom resource to handle installing a command via the
+  # Linux 'alternatives' system.
+  define alternatives ( $cmd = $title, $priority = '20000' ) {
+    exec { "Install alternative for ${cmd}":
+      command => "${alternatives_cmd} --install ${target_dir}/${cmd} ${cmd} ${source_dir}/${cmd} ${priority}"
+    }
+  }
+  
   # ---------------------------------------------------------
   # Install Oracle Java
   # ---------------------------------------------------------
@@ -219,23 +227,18 @@ class cspace_java {
       # RedHat-based systems appear to alias the executable file 'alternatives'
       # to 'update-alternatives', perhaps for cross-platform compatibility.
       $alternatives_cmd = '/usr/sbin/update-alternatives'
-      $default_priority = '20000'
       $target_dir       = '/usr/bin'
       $source_dir       = '/usr/java/latest/bin'
       
       # See http://stackoverflow.com/a/6403457 for this looping technique
-      define alternatives {
-        Exec { 'Install alternatives':
-          command => "${alternatives_cmd} --install ${target_dir}/${title} ${title} ${source_dir}/${title} ${default_priority}"
-        }
-      }
-      alternatives { [ 'java', 'javac', 'jar' ]:
-      }
+      alternatives { [ 'java', 'javac', 'jar' ]: }
   
     }
     
     default: {
       # Do nothing under OS families that don't use this system
     }
+    
+  } # end case $os_family
   
 }
