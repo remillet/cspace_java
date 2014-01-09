@@ -12,5 +12,6 @@
 include cspace_environment::execpaths
 include cspace_environment::osbits
 include cspace_environment::osfamily
+include cspace_environment::tempdir
 
 class { 'cspace_java': }

@@ -102,7 +102,7 @@ class cspace_java {
         cwd       => $temp_dir,
         path      => $exec_paths,
         logoutput => true,
-        creates   => $jdk_filename,
+        creates   => "${temp_dir}/${jdk_filename}",
         require   => Exec[ 'Find wget executable' ],
       }
       
