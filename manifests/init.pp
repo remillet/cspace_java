@@ -49,11 +49,10 @@ class cspace_java {
   $osx_exec_paths   = $cspace_environment::execpaths::osx_default_exec_paths
   $temp_dir         = $cspace_environment::tempdir::system_temp_directory
   
-  # Define a custom resource to handle installing a command via the
-  # Linux 'alternatives' system.
-  define alternatives ( $cmd = $title, $priority = '20000' ) {
-    exec { "Install alternative for ${cmd}":
-      command => "${alternatives_cmd} --install ${target_dir}/${cmd} ${cmd} ${source_dir}/${cmd} ${priority}"
+  # Define a custom resource to install commands via the Linux 'alternatives' system.
+  define alternatives-install ( $cmd = $title, $target_dir, $source_dir, $priority = '20000' ) {
+    exec { "Install alternative for ${cmd} with priority ${priority}":
+      command => "/usr/sbin/update-alternatives --install ${target_dir}/${cmd} ${cmd} ${source_dir}/${cmd} ${priority}"
     }
   }
   
@@ -226,12 +225,15 @@ class cspace_java {
     RedHat, Debian: {
       # RedHat-based systems appear to alias the executable file 'alternatives'
       # to 'update-alternatives', perhaps for cross-platform compatibility.
-      $alternatives_cmd = '/usr/sbin/update-alternatives'
-      $target_dir       = '/usr/bin'
-      $source_dir       = '/usr/java/latest/bin'
+      $java_target_dir  = '/usr/bin' # where to install aliases to java executables
+      $java_source_dir  = '/usr/java/latest/bin' # where to find these executables
       
+      # Uses custom 'alternatives-install' resource defined above.
       # See http://stackoverflow.com/a/6403457 for this looping technique
-      alternatives { [ 'java', 'javac', 'jar' ]: }
+      alternatives-install { [ 'java', 'javac', 'jar' ]:
+        target_dir => $java_target_dir,
+        source_dir => $java_source_dir,
+      }
   
     }
     
