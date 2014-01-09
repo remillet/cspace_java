@@ -59,7 +59,6 @@ class cspace_java {
       exec { 'Find wget executable':
         command   => '/bin/sh -c "command -v wget"',
         path      => $exec_paths,
-        logoutput => true,
       }
       
       # The following values MUST be manually updated when the Java JDK is updated.
@@ -99,11 +98,23 @@ class cspace_java {
  
       exec { 'Download Oracle Java RPM package':
         command   => $download_cmd,
-        cwd       => $temp_dir,
         path      => $exec_paths,
         logoutput => true,
         creates   => "${temp_dir}/${jdk_filename}",
         require   => Exec[ 'Find wget executable' ],
+      }
+      
+      exec { 'Set execute permission on Oracle Java RPM package':
+        command   => "chmod a+x ${temp_dir}/${jdk_filename}",
+        path      => $exec_paths,
+        require   => Exec[ 'Download Oracle Java RPM package' ],
+      }
+      
+      # Installs and removes any older versions
+      exec { 'Install and upgrade Oracle Java RPM package':
+        command   => "rpm -Uvh ${temp_dir}/${jdk_filename}",
+        path      => $exec_paths,
+        require   => Exec[ 'Set execute permission on Oracle Java RPM package' ],
       }
       
     }
