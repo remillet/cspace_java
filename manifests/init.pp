@@ -226,8 +226,8 @@ class cspace_java {
     # distros to those in RedHat-based distros.
     
     RedHat, Debian: {
-      # RedHat-based systems appear to alias the executable file 'alternatives'
-      # to 'update-alternatives', perhaps for cross-platform compatibility.
+      # RedHat-based systems appear to alias 'update-alternatives' to the
+      # executable file 'alternatives', perhaps for cross-platform compatibility.
       $java_target_dir  = '/usr/bin' # where to install aliases to java executables
       $java_source_dir  = '/usr/java/latest/bin' # where to find these executables
       
