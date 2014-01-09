@@ -96,9 +96,11 @@ class cspace_java {
       $os_bits = $cspace_environment::osbits::os_bits
       if $os_bits == '64-bit' {
         $jdk_filename = "${jdk_filename_prefix}-linux-x64.rpm"
+        # E.g. gives '7u45-b18/jdk-7u45-linux-x64.rpm' for Java version 7, update 45, build 18, Linux 64-bit RPM
         $jdk_path = "${jdk_path_segment}/${jdk_filename}"
       } elsif $os_bits == '32-bit' {
         $jdk_filename = "${jdk_filename_prefix}-linux-i586.rpm"
+        # E.g. gives '7u45-b18/jdk-7u45-linux-i586.rpm' for Java version 7, update 45, build 18, Linux 32-bit RPM
         $jdk_path = "${jdk_path_segment}/${jdk_filename}"
       } else {
         fail( 'Could not select Oracle Java RPM file for download: unknown value for OS virtual address space' )
@@ -125,7 +127,7 @@ class cspace_java {
  
       exec { 'Download Oracle Java RPM package':
         command   => $download_cmd,
-        cwd       => $temp_dir,
+        cwd       => $temp_dir, # may be redundant with --directory-prefix in 'wget' command
         path      => $exec_paths,
         logoutput => true,
         creates   => "${temp_dir}/${jdk_filename}",
