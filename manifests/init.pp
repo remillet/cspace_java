@@ -89,15 +89,19 @@ class cspace_java {
       $download_cmd = join(
         [
           "wget",
-          " --no-cookies",
-          " --no-check-certificate",
           " --header \"Cookie: gpw_e24=http%3A%2F%2Fwww.oracle.com\"",
           " http://download.oracle.com/otn-pub/java/jdk/${jdk_path}",
+          " --no-check-certificate",
+          " --no-cookies",
+          " --timeout 300", # 5 minutes
+          " --tries 2",
+          " --verbose=off", # alternative: --quiet
         ]
       )
  
       exec { 'Download Oracle Java RPM package':
         command   => $download_cmd,
+        cwd       => ${temp_dir},
         path      => $exec_paths,
         logoutput => true,
         creates   => "${temp_dir}/${jdk_filename}",
