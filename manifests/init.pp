@@ -84,7 +84,7 @@ class cspace_java {
       $jdk_version         = "${java_version}u${update_number}'
       # E.g. gives build version 'b18' for build 18
       $build_version       = 'b${build_number}'
-      $jdk_path_segment    = "${jdk_version}-${build_version}"
+      $jdk_path_segment    = "${jdk_version}-${build_number}"
       $jdk_filename_prefix = "jdk-${jdk_version}"
       $os_bits = $cspace_environment::osbits::os_bits
       if $os_bits == '64-bit' {
