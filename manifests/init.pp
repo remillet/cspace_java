@@ -39,6 +39,7 @@
 include cspace_environment::execpaths
 include cspace_environment::osbits
 include cspace_environment::osfamily
+include cspace_environment::tempdir
 include stdlib # for join()
 
 class cspace_java {
@@ -46,7 +47,8 @@ class cspace_java {
   $os_family        = $cspace_environment::osfamily::os_family
   $linux_exec_paths = $cspace_environment::execpaths::linux_default_exec_paths
   $osx_exec_paths   = $cspace_environment::execpaths::osx_default_exec_paths
-
+  $temp_dir         = $cspace_environment::tempdir::system_temp_directory
+  
   case $os_family {
     
     RedHat: {
@@ -60,19 +62,26 @@ class cspace_java {
         logoutput => true,
       }
       
-      # The following value MUST be manually updated when the Java JDK is updated.
+      # The following values MUST be manually updated when the Java JDK is updated.
       #
       # TODO: Investigate whether it may be possible to avoid hard-coding
       # specific versions below via the technique discussed at
       # http://stackoverflow.com/a/20705933 (requires Oracle support account)
       # or any symlinked URLs, such as (the posited, perhaps now obsolete)
       # http://download.oracle.com/otn-pub/java/jdk/7/jdk-7-linux-x64.tar.gz
-      $jdk_path_segment = '7u45-b18/jdk-7u45'
-      $os_bits          = $cspace_environment::osbits::os_bits
+      $jdk_version         = '7u45'
+      $build_version       = 'b18'
+      # Naming conventions currently used by Oracle; this code will break
+      # and require modification if these conventions change:
+      $jdk_path_segment    = "${jdk_version}-${build_version}"
+      $jdk_filename_prefix = "jdk-${jdk_version}"
+      $os_bits = $cspace_environment::osbits::os_bits
       if $os_bits == '64-bit' {
-        $jdk_path = "${jdk_path_segment}-linux-x64.rpm"
+        $jdk_filename = "${jdk_filename_prefix}-linux-x64.rpm"
+        $jdk_path = "${jdk_path_segment}/${jdk_filename}"
       } elsif $os_bits == '32-bit' {
-        $jdk_path = "${jdk_path_segment}-linux-i586.rpm"
+        $jdk_filename = "${jdk_filename_prefix}-linux-i586.rpm"
+        $jdk_path = "${jdk_path_segment}/${jdk_filename}"
       } else {
         fail( 'Could not select Oracle Java RPM file for download: unknown value for OS virtual address space' )
       }
@@ -90,8 +99,10 @@ class cspace_java {
  
       exec { 'Download Oracle Java RPM package':
         command   => $download_cmd,
+        cwd       => $temp_dir,
         path      => $exec_paths,
         logoutput => true,
+        creates   => $jdk_filename,
         require   => Exec[ 'Find wget executable' ],
       }
       
