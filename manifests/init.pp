@@ -132,16 +132,18 @@ class cspace_java {
       }
       
       exec { 'Set execute permission on Oracle Java RPM package':
-        command   => "chmod a+x ${temp_dir}/${jdk_filename}",
-        path      => $exec_paths,
-        require   => Exec[ 'Download Oracle Java RPM package' ],
+        command => "chmod a+x ${temp_dir}/${jdk_filename}",
+        path    => $exec_paths,
+        require => Exec[ 'Download Oracle Java RPM package' ],
       }
       
-      # Installs and removes any older versions
+      # Installs and removes any older versions.
+      # ('--replacepkgs forces installation even if the package is already installed.)
       exec { 'Install and upgrade Oracle Java RPM package':
-        command   => "rpm -Uvh ${temp_dir}/${jdk_filename}",
-        path      => $exec_paths,
-        require   => Exec[ 'Set execute permission on Oracle Java RPM package' ],
+        command => "rpm -Uvh --replacepkgs ${temp_dir}/${jdk_filename}",
+        path    => $exec_paths,
+        require => Exec[ 'Set execute permission on Oracle Java RPM package' ],
+        before  => Alternatives-install [ 'java', 'javac', 'jar' ],
       }
       
     }
@@ -191,6 +193,7 @@ class cspace_java {
         ensure  => installed,
         name    => 'oracle-jdk7-installer',
         require => Exec[ 'Accept Oracle license agreement' ],
+        before  => Alternatives-install [ 'java', 'javac', 'jar' ],
       }
 
     }
