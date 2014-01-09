@@ -101,7 +101,7 @@ class cspace_java {
  
       exec { 'Download Oracle Java RPM package':
         command   => $download_cmd,
-        cwd       => ${temp_dir},
+        cwd       => $temp_dir,
         path      => $exec_paths,
         logoutput => true,
         creates   => "${temp_dir}/${jdk_filename}",
