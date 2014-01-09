@@ -112,13 +112,14 @@ class cspace_java {
       $download_cmd = join(
         [
           "wget",
+          " --directory-prefix=${temp_dir}",
           " --header \"Cookie: gpw_e24=http%3A%2F%2Fwww.oracle.com\"",
           " http://download.oracle.com/otn-pub/java/jdk/${jdk_path}",
           " --no-check-certificate",
           " --no-cookies",
+          " --no-verbose",
           " --timeout 300", # 5 minutes
           " --tries 2",
-          " --verbose=off",
         ]
       )
  
