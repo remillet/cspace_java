@@ -58,9 +58,7 @@ class cspace_java {
         command   => '/bin/sh -c "command -v wget"',
         path      => $exec_paths,
         logoutput => true,
-        before    => Notify[ 'Creating source directory' ],
       }
-      
       
       # The following value MUST be manually updated when the Java JDK is updated.
       #
