@@ -247,6 +247,7 @@ class cspace_java {
       alternatives-install { [ 'java', 'javac', 'jar' ]:
         target_dir => $java_target_dir,
         source_dir => $java_source_dir,
+        before  => Alternatives-config [ 'java', 'javac', 'jar' ],
       }
 
       # Uses custom 'alternatives-config' resource defined above.
