@@ -58,7 +58,7 @@ class cspace_java {
   
   # Define a custom resource to configure ('set') commands as defaults
   # via the Linux 'alternatives' system.
-  define alternatives-config ( $cmd = $title, $target_dir ) {
+  define alternatives-config ( $cmd = $title, $source_dir ) {
     exec { "Config default alternative for ${cmd} pointing to source directory ${source_dir}":
       command => "/usr/sbin/update-alternatives --set ${cmd} ${source_dir}/${cmd} "
     }
