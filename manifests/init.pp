@@ -56,6 +56,14 @@ class cspace_java {
     }
   }
   
+  # Define a custom resource to configure ('set') commands as defaults
+  # via the Linux 'alternatives' system.
+  define alternatives-config ( $cmd = $title, $target_dir ) {
+    exec { "Config default alternative for ${cmd} pointing to source directory ${source_dir}":
+      command => "/usr/sbin/update-alternatives --set ${cmd} ${source_dir}/${cmd} "
+    }
+  }
+  
   # ---------------------------------------------------------
   # Install Oracle Java
   # ---------------------------------------------------------
@@ -225,8 +233,8 @@ class cspace_java {
   
   case $os_family {
     
-    # TODO: Verify whether the installation paths are identical in Debian-based
-    # distros to those in RedHat-based distros.
+    # FIXME: Verify whether the installation paths are identical in Debian-based
+    # distros to those in RedHat-based distros.  If not, split off a Debian case here.
     
     RedHat, Debian: {
       # RedHat-based systems appear to alias 'update-alternatives' to the
@@ -240,7 +248,11 @@ class cspace_java {
         target_dir => $java_target_dir,
         source_dir => $java_source_dir,
       }
-  
+
+      # Uses custom 'alternatives-config' resource defined above.
+      alternatives-config { [ 'java', 'javac', 'jar' ]:
+        source_dir => $java_source_dir,
+      }  
     }
     
     default: {
