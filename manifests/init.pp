@@ -154,7 +154,7 @@ class cspace_java {
         command => "rpm -Uvh --replacepkgs ${temp_dir}/${jdk_filename}",
         path    => $exec_paths,
         require => Exec[ 'Set execute permission on Oracle Java RPM package' ],
-        before  => Alternatives-install [ 'java', 'javac', 'jar' ],
+        before  => Alternatives-install [ 'java', 'javac' ],
       }
       
     }
@@ -204,7 +204,7 @@ class cspace_java {
         ensure  => installed,
         name    => 'oracle-jdk7-installer',
         require => Exec[ 'Accept Oracle license agreement' ],
-        before  => Alternatives-install [ 'java', 'javac', 'jar' ],
+        before  => Alternatives-install [ 'java', 'javac' ],
       }
 
     }
@@ -244,14 +244,14 @@ class cspace_java {
       
       # Uses custom 'alternatives-install' resource defined above.
       # See http://stackoverflow.com/a/6403457 for this looping technique
-      alternatives-install { [ 'java', 'javac', 'jar' ]:
+      alternatives-install { [ 'java', 'javac' ]:
         target_dir => $java_target_dir,
         source_dir => $java_source_dir,
-        before  => Alternatives-config [ 'java', 'javac', 'jar' ],
+        before  => Alternatives-config [ 'java', 'javac' ],
       }
 
       # Uses custom 'alternatives-config' resource defined above.
-      alternatives-config { [ 'java', 'javac', 'jar' ]:
+      alternatives-config { [ 'java', 'javac' ]:
         source_dir => $java_source_dir,
       }  
     }
