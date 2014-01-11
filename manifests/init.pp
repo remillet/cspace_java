@@ -171,7 +171,7 @@ class cspace_java {
       package { 'Install software-properties-common' :
         ensure  => installed,
         name    => 'software-properties-common',
-        require => Exec[ 'Update apt-get to reflect current packages and versions' ],
+        require => Exec[ 'Update apt-get before Java update to reflect current packages' ],
       }
 
       package { 'Install python-software-properties' :
