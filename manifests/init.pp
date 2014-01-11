@@ -163,7 +163,7 @@ class cspace_java {
       
       $exec_paths = $linux_exec_paths
       
-      exec { 'Update apt-get to reflect current packages and versions' :
+      exec { 'Update apt-get before Java update to reflect current packages' :
         command => 'apt-get -y update',
         path    => $exec_paths,
       }
