@@ -206,7 +206,7 @@ class cspace_java {
         ensure  => installed,
         name    => 'oracle-jdk7-installer',
         require => Exec[ 'Accept Oracle license agreement' ],
-        before  => Alternatives-install [ 'java', 'javac' ],
+        # before  => Alternatives-install [ 'java', 'javac' ],
       }
 
     }
