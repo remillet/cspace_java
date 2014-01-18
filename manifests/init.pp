@@ -180,6 +180,8 @@ class cspace_java {
         require => Package[ 'Install software-properties-common' ],
       }
   
+      # For a non-Exec-based technique for managing APT repositories,
+      # see https://github.com/softek/puppet-java7/blob/master/manifests/init.pp
       exec { 'Add an APT repository providing Oracle Java packages' :
         command => 'add-apt-repository ppa:webupd8team/java',
         path    => $exec_paths,
@@ -232,13 +234,23 @@ class cspace_java {
   # provide advantages over Exec-based management here.
   
   case $os_family {
+
+    # At least with Ubuntu 13.10, the installation process set
+    # up 'alternatives' pointing to
+    # /usr/lib/jvm/java-7-oracle/jre/bin/java and
+    # /usr/lib/jvm/java-7-oracle/bin/javac
+    #
+    # For this reason, we won't set these up explicitly here, unless we
+    # determine that older Ubuntu releases may still require that.
+    Debian: {
+    }
     
-    # FIXME: Verify whether the installation paths are identical in Debian-based
-    # distros to those in RedHat-based distros.  If not, split off a Debian case here.
-    
-    RedHat, Debian: {
+    RedHat: {
+      
       # RedHat-based systems appear to alias 'update-alternatives' to the
       # executable file 'alternatives', perhaps for cross-platform compatibility.
+      
+      # TODO: Determine whether there's some non-hard-coded way to identify these paths.
       $java_target_dir  = '/usr/bin' # where to install aliases to java executables
       $java_source_dir  = '/usr/java/latest/bin' # where to find these executables
       
