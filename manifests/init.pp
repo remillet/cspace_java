@@ -89,8 +89,8 @@ class cspace_java {
       # or any symlinked URLs, such as (the posited, perhaps now obsolete)
       # http://download.oracle.com/otn-pub/java/jdk/7/jdk-7-linux-x64.tar.gz
       $java_version        = '7'
-      $update_number       = '45'
-      $build_number        = '18'
+      $update_number       = '51'
+      $build_number        = '13'
       # The following reflects naming conventions currently used by Oracle.
       # This code will break and require modification if any of the following
       # conventions change, either for Java version numbers or for URLs on
