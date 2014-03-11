@@ -52,7 +52,8 @@ class cspace_java {
   # Define a custom resource to install commands via the Linux 'alternatives' system.
   define alternatives-install ( $cmd = $title, $target_dir, $source_dir, $priority = '20000' ) {
     exec { "Install alternative for ${cmd} with priority ${priority}":
-      command => "/usr/sbin/update-alternatives --install ${target_dir}/${cmd} ${cmd} ${source_dir}/${cmd} ${priority}"
+      command   => "/usr/sbin/update-alternatives --install ${target_dir}/${cmd} ${cmd} ${source_dir}/${cmd} ${priority}",
+      logoutput => on_failure,
     }
   }
   
@@ -60,7 +61,8 @@ class cspace_java {
   # via the Linux 'alternatives' system.
   define alternatives-config ( $cmd = $title, $source_dir ) {
     exec { "Config default alternative for ${cmd} pointing to source directory ${source_dir}":
-      command => "/usr/sbin/update-alternatives --set ${cmd} ${source_dir}/${cmd} "
+      command   => "/usr/sbin/update-alternatives --set ${cmd} ${source_dir}/${cmd}",
+      logoutput => on_failure,
     }
   }
   
@@ -78,6 +80,7 @@ class cspace_java {
       exec { 'Find wget executable':
         command   => '/bin/sh -c "command -v wget"',
         path      => $exec_paths,
+        logoutput => on_failure,
       }
       
       # The following values for Java version, update number, and build number
@@ -139,22 +142,25 @@ class cspace_java {
         path      => $exec_paths,
         logoutput => true,
         creates   => "${temp_dir}/${jdk_filename}",
+        logoutput => on_failure,
         require   => Exec[ 'Find wget executable' ],
       }
       
       exec { 'Set execute permission on Oracle Java RPM package':
         command => "chmod a+x ${temp_dir}/${jdk_filename}",
         path    => $exec_paths,
+        logoutput => on_failure,
         require => Exec[ 'Download Oracle Java RPM package' ],
       }
       
       # Installs and removes any older versions.
       # ('--replacepkgs forces installation even if the package is already installed.)
       exec { 'Install and upgrade Oracle Java RPM package':
-        command => "rpm -Uvh --replacepkgs ${temp_dir}/${jdk_filename}",
-        path    => $exec_paths,
-        require => Exec[ 'Set execute permission on Oracle Java RPM package' ],
-        before  => Alternatives-install [ 'java', 'javac' ],
+        command   => "rpm -Uvh --replacepkgs ${temp_dir}/${jdk_filename}",
+        path      => $exec_paths,
+        logoutput => on_failure,
+        before    => Alternatives-install [ 'java', 'javac' ],
+        require   => Exec[ 'Set execute permission on Oracle Java RPM package' ],
       }
       
     }
@@ -164,48 +170,55 @@ class cspace_java {
       $exec_paths = $linux_exec_paths
       
       exec { 'Update apt-get before Java update to reflect current packages' :
-        command => 'apt-get -y update',
-        path    => $exec_paths,
+        command   => 'apt-get -y update',
+        path      => $exec_paths,
+        logoutput => on_failure,
       }
   
       package { 'Install software-properties-common' :
-        ensure  => installed,
-        name    => 'software-properties-common',
-        require => Exec[ 'Update apt-get before Java update to reflect current packages' ],
+        ensure    => installed,
+        name      => 'software-properties-common',
+        logoutput => on_failure,
+        require   => Exec[ 'Update apt-get before Java update to reflect current packages' ],
       }
 
       package { 'Install python-software-properties' :
-        ensure  => installed,
-        name    => 'python-software-properties',
-        require => Package[ 'Install software-properties-common' ],
+        ensure    => installed,
+        name      => 'python-software-properties',
+        logoutput => on_failure,
+        require   => Package[ 'Install software-properties-common' ],
       }
   
       # For a non-Exec-based technique for managing APT repositories,
       # see https://github.com/softek/puppet-java7/blob/master/manifests/init.pp
       exec { 'Add an APT repository providing Oracle Java packages' :
-        command => 'add-apt-repository ppa:webupd8team/java',
-        path    => $exec_paths,
-        require => Package[ 'Install python-software-properties' ],
+        command   => 'add-apt-repository ppa:webupd8team/java',
+        path      => $exec_paths,
+        logoutput => on_failure,
+        require   => Package[ 'Install python-software-properties' ],
       }
   
       exec { 'Update apt-get to reflect the new repository' :
-        command => 'apt-get -y update',  
-        path    => $exec_paths,
-        require => Exec[ 'Add an APT repository providing Oracle Java packages' ],
+        command   => 'apt-get -y update',  
+        path      => $exec_paths,
+        logoutput => on_failure,
+        require   => Exec[ 'Add an APT repository providing Oracle Java packages' ],
       }
   
       # Perform unattended acceptance of the Oracle license agreement and
       # store this acceptance in a configuration file.
       exec { 'Accept Oracle license agreement' :
-        command => 'echo oracle-java7-installer shared/accepted-oracle-license-v1-1 select true | debconf-set-selections',
-        path    => $exec_paths,
-        require => Exec[ 'Update apt-get to reflect the new repository' ],
+        command   => 'echo oracle-java7-installer shared/accepted-oracle-license-v1-1 select true | debconf-set-selections',
+        path      => $exec_paths,
+        logoutput => on_failure,
+        require   => Exec[ 'Update apt-get to reflect the new repository' ],
       }
   
       package { 'Install Oracle Java 7' :
-        ensure  => installed,
-        name    => 'oracle-jdk7-installer',
-        require => Exec[ 'Accept Oracle license agreement' ],
+        ensure    => installed,
+        name      => 'oracle-jdk7-installer',
+        logoutput => on_failure,
+        require   => Exec[ 'Accept Oracle license agreement' ],
         # before  => Alternatives-install [ 'java', 'javac' ],
       }
 
