@@ -177,14 +177,12 @@ class cspace_java {
       package { 'Install software-properties-common' :
         ensure    => installed,
         name      => 'software-properties-common',
-        logoutput => on_failure,
         require   => Exec[ 'Update apt-get before Java update to reflect current packages' ],
       }
 
       package { 'Install python-software-properties' :
         ensure    => installed,
         name      => 'python-software-properties',
-        logoutput => on_failure,
         require   => Package[ 'Install software-properties-common' ],
       }
   
@@ -216,7 +214,6 @@ class cspace_java {
       package { 'Install Oracle Java 7' :
         ensure    => installed,
         name      => 'oracle-jdk7-installer',
-        logoutput => on_failure,
         require   => Exec[ 'Accept Oracle license agreement' ],
         # before  => Alternatives-install [ 'java', 'javac' ],
       }
