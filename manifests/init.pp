@@ -70,73 +70,101 @@ class cspace_java {
   # Install Oracle Java
   # ---------------------------------------------------------
   
+  # The following values for Java version, update number, and build number
+  # MUST be manually updated whenever the Java JDK is updated.
+  #
+  # TODO: Investigate whether it may be possible to avoid hard-coding
+  # specific versions below via the technique discussed at
+  # http://stackoverflow.com/a/20705933 (requires Oracle support account).
+  $java_version        = '7'
+  $update_number       = '55'
+  $build_number        = '13'
+  
+  # The following reflects naming conventions currently used by Oracle.
+  # This code will break and require modification if any of the following
+  # conventions change, either for Java version numbers or for URLs on
+  # Oracle's Java SE downloads website.
+  # E.g. gives JDK version '7u55' for Java version 7, update 55
+  $jdk_version         = "${java_version}u${update_number}"
+  # E.g. gives build version 'b13' for build 13
+  $build_version       = "b${build_number}"
+  
+  $platform = $os_family ? {
+      RedHat  => 'linux',
+      Debian  => 'linux',
+      darwin  => 'macosx',
+      windows => 'windows',
+  }
+  
+  $os_bits = $cspace_environment::osbits::os_bits
+  $architecture = $os_bits ? {
+      32-bit => 'i586',
+      64-bit => 'x64',
+  }
+  
+  $filename_extension = $os_family ? {
+      RedHat  => '.rpm',
+      Debian  => '.tar.gz',
+      darwin  => '.dmg',
+      windows => '.exe',
+  }
+  
+  $jdk_path_segment    = "${jdk_version}-${build_version}"
+  $jdk_filename        = "jdk-${jdk_version}-${platform}-${architecture}${filename_extension}"
+  # E.g. gives '7u55-b13/jdk-7u55-linux-x64.rpm' for Java version 7, update 55, build 13,
+  # for Linux 64-bit RPM archives on RedHat-based Linux systems
+  # and '7u55-b13/jdk-7u55-linux-i586.tar.gz' for Java version 7, update 55, build 13,
+  # for Linux 32-bit tarred and gzipped (tarball) archives on Debian-based Linux systems  
+  $jdk_url_path        = "${jdk_path_segment}/${jdk_filename}"
+  
+  notice("jdk_url_path=${jdk_url_path}")
+
   case $os_family {
     
-    RedHat: {
+    RedHat, Debian: {
+      
       $exec_paths = $linux_exec_paths
-      # See in part:
-      # http://www.java.com/en/download/help/linux_x64rpm_install.xml
       
       exec { 'Find wget executable':
         command   => '/bin/sh -c "command -v wget"',
         path      => $exec_paths,
         logoutput => on_failure,
       }
-      
-      # The following values for Java version, update number, and build number
-      # MUST be manually updated when the Java JDK is updated.
-      #
-      # TODO: Investigate whether it may be possible to avoid hard-coding
-      # specific versions below via the technique discussed at
-      # http://stackoverflow.com/a/20705933 (requires Oracle support account)
-      # or any symlinked URLs, such as (the posited, perhaps now obsolete)
-      # http://download.oracle.com/otn-pub/java/jdk/7/jdk-7-linux-x64.tar.gz
-      $java_version        = '7'
-      $update_number       = '51'
-      $build_number        = '13'
-      # The following reflects naming conventions currently used by Oracle.
-      # This code will break and require modification if any of the following
-      # conventions change, either for Java version numbers or for URLs on
-      # Oracle's Java SE downloads website.
-      # E.g. gives JDK version '7u45' for Java version 7, update 45
-      $jdk_version         = "${java_version}u${update_number}"
-      # E.g. gives build version 'b18' for build 18
-      $build_version       = "b${build_number}"
-      $jdk_path_segment    = "${jdk_version}-${build_version}"
-      $jdk_filename_prefix = "jdk-${jdk_version}"
-      $os_bits = $cspace_environment::osbits::os_bits
-      if $os_bits == '64-bit' {
-        $jdk_filename      = "${jdk_filename_prefix}-linux-x64.rpm"
-        # E.g. gives '7u45-b18/jdk-7u45-linux-x64.rpm' for Java version 7, update 45, build 18, Linux 64-bit RPM
-        $jdk_path          = "${jdk_path_segment}/${jdk_filename}"
-      } elsif $os_bits == '32-bit' {
-        $jdk_filename      = "${jdk_filename_prefix}-linux-i586.rpm"
-        # E.g. gives '7u45-b18/jdk-7u45-linux-i586.rpm' for Java version 7, update 45, build 18, Linux 32-bit RPM
-        $jdk_path          = "${jdk_path_segment}/${jdk_filename}"
-      } else {
-        fail( 'Could not select Oracle Java RPM file for download: unknown value for OS virtual address space' )
-      }
-      
+  
       # Per http://stackoverflow.com/a/10959815
-      # Note that the contents of the cookie below, which helps serve as
-      # validation that this automated process has its users' consent to
-      # agree to Oracle's Java SE license terms, as well as that validation
+      #
+      # The value of the 'jdk_url_path' variable is set directly above.
+      
+      # The cookie below helps validate that this automated process has
+      # its users' consent to agree to Oracle's Java SE license terms.
+      #
+      # NOTE: this cookie's contents, as well as that validation
       # process in general, is subject to change on Oracle's part.
+      # Whenever that changes, this code will need to be changed accordingly.
+      $cookie = join(
+        [
+          "s_cc=true; ",
+          "s_nr=1397591742050; ",
+          "s_sq=%5B%5BB%5D%5D; ",
+          "gpw_e24=http%3A%2F%2Fwww.oracle.com%2Ftechnetwork%2Fjava%2Fjavase%2Fdownloads%2Fjdk7-downloads-1880260.html; ",
+          "oraclelicense=accept-securebackup-cookie"
+       ]
+      )
       $download_cmd = join(
         [
           "wget",
           " --directory-prefix=${temp_dir}",
-          " --header \"Cookie: gpw_e24=http%3A%2F%2Fwww.oracle.com\"",
-          " http://download.oracle.com/otn-pub/java/jdk/${jdk_path}",
+          " --header \"Cookie: ${cookie}\"",
           " --no-check-certificate",
           " --no-cookies",
           " --no-verbose",
           " --timeout 300", # 5 minutes
           " --tries 2",
+          " http://download.oracle.com/otn-pub/java/jdk/${jdk_url_path}",
         ]
       )
- 
-      exec { 'Download Oracle Java RPM package':
+            
+      exec { 'Download Oracle Java package':
         command   => $download_cmd,
         cwd       => $temp_dir, # may be redundant with --directory-prefix in 'wget' command
         path      => $exec_paths,
@@ -145,11 +173,22 @@ class cspace_java {
         require   => Exec[ 'Find wget executable' ],
       }
       
+    }
+    
+  }
+  
+  case $os_family {
+    
+    RedHat: {
+                  
+      # See in part:
+      # http://www.java.com/en/download/help/linux_x64rpm_install.xml
+      
       exec { 'Set execute permission on Oracle Java RPM package':
         command   => "chmod a+x ${temp_dir}/${jdk_filename}",
         path      => $exec_paths,
         logoutput => on_failure,
-        require   => Exec[ 'Download Oracle Java RPM package' ],
+        require   => Exec[ 'Download Oracle Java package' ],
       }
       
       # Installs and removes any older versions.
@@ -165,9 +204,7 @@ class cspace_java {
     }
     
     Debian: {
-      
-      $exec_paths = $linux_exec_paths
-      
+                  
       exec { 'Update apt-get before Java update to reflect current packages' :
         command   => 'apt-get -y update',
         path      => $exec_paths,
