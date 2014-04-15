@@ -131,25 +131,15 @@ class cspace_java {
         logoutput => on_failure,
       }
   
-      # Per http://stackoverflow.com/a/10959815
-      #
-      # The value of the 'jdk_url_path' variable is set directly above.
-      
       # The cookie below helps validate that this automated process has
       # its users' consent to agree to Oracle's Java SE license terms.
       #
       # NOTE: this cookie's contents, as well as that validation
       # process in general, is subject to change on Oracle's part.
       # Whenever that changes, this code will need to be changed accordingly.
-      $cookie = join(
-        [
-          "s_cc=true; ",
-          "s_nr=1397591742050; ",
-          "s_sq=%5B%5BB%5D%5D; ",
-          "gpw_e24=http%3A%2F%2Fwww.oracle.com%2Ftechnetwork%2Fjava%2Fjavase%2Fdownloads%2Fjdk7-downloads-1880260.html; ",
-          "oraclelicense=accept-securebackup-cookie"
-       ]
-      )
+      $cookie = 'oraclelicense=accept-securebackup-cookie'
+      
+      # Per http://stackoverflow.com/a/10959815
       $download_cmd = join(
         [
           "wget",
