@@ -117,7 +117,8 @@ class cspace_java {
   # for Linux 32-bit tarred and gzipped (tarball) archives on Debian-based Linux systems  
   $jdk_url_path        = "${jdk_path_segment}/${jdk_filename}"
   
-  notice("jdk_url_path=${jdk_url_path}")
+  # Uncomment for debugging as needed:
+  # notice("jdk_url_path=${jdk_url_path}")
 
   case $os_family {
     
@@ -170,7 +171,7 @@ class cspace_java {
   case $os_family {
     
     RedHat: {
-                  
+                        
       # See in part:
       # http://www.java.com/en/download/help/linux_x64rpm_install.xml
       
@@ -193,14 +194,98 @@ class cspace_java {
       
     }
     
+    # OS X
+    darwin: {
+      $exec_paths = $osx_exec_paths
+    }
+  
+    # Microsoft Windows
+    windows: {
+    }
+  
+    default: {
+    }
+          
+  }
+    
+  case $::operatingsystem {
+        
     Debian: {
-                  
+
+      # Uncomment for debugging as needed:
+      # notice( "Detected Debian" )
+
+      # See https://wiki.debian.org/JavaPackage
+    
+      augeas { "Add Debian contrib APT repository":
+        context => '/files/etc/apt/sources.list',
+        # See (older) documentation on constructing Augeas paths at
+        # http://projects.puppetlabs.com/projects/1/wiki/puppet_augeas
+        # FIXME: the following path makes some positional assumptions and thus is brittle; it can and should be improved.
+        changes => "set /files/etc/apt/sources.list/1[type = 'deb' and uri = 'http://http.us.debian.org/debian']/component[2] contrib",
+        # Output from 'augtool print /files/etc/apt/sources.list', after 'contrib' repo was manually added:
+        # /files/etc/apt/sources.list/1/type = "deb"
+        # /files/etc/apt/sources.list/1/uri = "http://http.us.debian.org/debian"
+        # /files/etc/apt/sources.list/1/distribution = "wheezy"
+        # /files/etc/apt/sources.list/1/component[1] = "main"
+        # /files/etc/apt/sources.list/1/component[2] = "contrib"
+        require   => Exec[ 'Download Oracle Java package' ],
+      }
+
+      exec { 'Update apt-get to reflect the new repository configuration' :
+        command   => 'apt-get -y update',  
+        path      => $exec_paths,
+        logoutput => on_failure,
+        require   => Augeas[ 'Add Debian contrib APT repository' ],
+      }
+
+      package { 'Install java-package' :
+        ensure    => installed,
+        name      => 'java-package',
+        require   => Exec[ 'Update apt-get to reflect the new repository configuration' ],
+      }
+    
+      # The following are (untested and known to be partly incorrect) placeholders for
+      # additional steps required to install Oracle Java 7 on Debian:
+    
+      # exec { 'Store interactive responses required for automation of make-jpkg' :
+      # NOTE: the following command is incorrect for doing so; we need to work out the correct
+      # debconf-set-selections values or another equivalent approach.  There is one prompt
+      # at which pressing a 'y' and the Enter key (CR?) is required, and a second prompt at
+      # which pressing the Enter key by itself is required.  For some possible hints,
+      # see http://unix.stackexchange.com/a/106553
+      #   command   => 'echo oracle-java7-installer shared/accepted-oracle-license-v1-1 select true | debconf-set-selections',
+      #   path      => $exec_paths,
+      #   logoutput => on_failure,
+      #   require   => Package[ 'Install java-package' ],
+      # }
+      # 
+      # exec { 'Create a Debian installer from the Oracle Java tarball' :
+      #   command   => "make-jpkg ${$jdk_filename}",
+      #   cwd       => $temp_dir,
+      #   path      => $exec_paths,
+      #   logoutput => on_failure,
+      #   require   => Exec[ 'Store interactive responses required for automation of make-jpkg' ],
+      # }
+      #
+      # Via another exec resource here, launch the Debian package manager;
+      # e.g. sudo dpkg -i oracle-j2sdk1.7_1.7.0+update55_i386.deb
+      # finding this file via the filename convention (also brittle)
+      # for the .deb file created via 'make-jpkg'
+    
+    }
+  
+    Ubuntu: {
+      
+      # Uncomment for debugging as needed:
+      # notice( "Detected Ubuntu" )
+
       exec { 'Update apt-get before Java update to reflect current packages' :
         command   => 'apt-get -y update',
         path      => $exec_paths,
         logoutput => on_failure,
       }
-  
+
       package { 'Install software-properties-common' :
         ensure    => installed,
         name      => 'software-properties-common',
@@ -212,7 +297,7 @@ class cspace_java {
         name      => 'python-software-properties',
         require   => Package[ 'Install software-properties-common' ],
       }
-  
+
       # For a non-Exec-based technique for managing APT repositories,
       # see https://github.com/softek/puppet-java7/blob/master/manifests/init.pp
       exec { 'Add an APT repository providing Oracle Java packages' :
@@ -221,14 +306,14 @@ class cspace_java {
         logoutput => on_failure,
         require   => Package[ 'Install python-software-properties' ],
       }
-  
+
       exec { 'Update apt-get to reflect the new repository' :
         command   => 'apt-get -y update',  
         path      => $exec_paths,
         logoutput => on_failure,
         require   => Exec[ 'Add an APT repository providing Oracle Java packages' ],
       }
-  
+
       # Perform unattended acceptance of the Oracle license agreement and
       # store this acceptance in a configuration file.
       exec { 'Accept Oracle license agreement' :
@@ -237,29 +322,18 @@ class cspace_java {
         logoutput => on_failure,
         require   => Exec[ 'Update apt-get to reflect the new repository' ],
       }
-  
+
       package { 'Install Oracle Java 7' :
         ensure    => installed,
         name      => 'oracle-jdk7-installer',
         require   => Exec[ 'Accept Oracle license agreement' ],
         # before  => Alternatives-install [ 'java', 'javac' ],
       }
+    
+    }
+    
+  } # end case $::operatingsystem
 
-    }
-    
-    # OS X
-    darwin: {
-      $exec_paths = $osx_exec_paths
-    }
-    
-    # Microsoft Windows
-    windows: {
-    }
-    
-    default: {
-    }
-  
-  } # end case
   
   # ---------------------------------------------------------
   # Add key Java commands to the Linux 'alternatives' system
