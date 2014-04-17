@@ -17,7 +17,7 @@ set packagefile [lindex $argv 0]
 
 # Command to run
 #
-# The make-jpgk script is required to be run by a non-root
+# The make-jpkg script is recommended to be run by a non-root
 # user, using fakeroot; for background on the latter, see
 # http://freecode.com/projects/fakeroot
 
