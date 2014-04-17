@@ -77,6 +77,10 @@ class cspace_java {
   # TODO: Investigate whether it may be possible to avoid hard-coding
   # specific versions below via the technique discussed at
   # http://stackoverflow.com/a/20705933 (requires Oracle support account).
+  #
+  # If/when the Java version reaches double-digits ('10'), or if the
+  # equivalance between 'Java n' and JDK '1.n' for any version 'n' might
+  # be changed, some path and code changes below will be required.
   $java_version        = '7'
   $update_number       = '55'
   $build_number        = '13'
@@ -150,7 +154,7 @@ class cspace_java {
           " --no-check-certificate",
           " --no-cookies",
           " --no-verbose",
-          " --timeout 300", # 5 minutes
+          " --timeout 300", # 300 seconds (5 minutes) download timeout
           " --tries 2",
           " http://download.oracle.com/otn-pub/java/jdk/${jdk_url_path}",
         ]
@@ -213,24 +217,27 @@ class cspace_java {
         
     Debian: {
 
-      # Uncomment for debugging as needed:
-      # notice( "Detected Debian" )
-
-      # See https://wiki.debian.org/JavaPackage
+      # For this technique, see:
+      # https://wiki.debian.org/JavaPackage
     
       augeas { "Add Debian contrib APT repository":
         context => '/files/etc/apt/sources.list',
-        # See (older) documentation on constructing Augeas paths at
-        # http://projects.puppetlabs.com/projects/1/wiki/puppet_augeas
-        # FIXME: the following path makes some positional assumptions and thus is brittle; it can and should be improved.
-        changes => "set /files/etc/apt/sources.list/1[type = 'deb' and uri = 'http://http.us.debian.org/debian']/component[2] contrib",
-        # Output from 'augtool print /files/etc/apt/sources.list', after 'contrib' repo was manually added:
+        # See documentation on constructing Augeas paths at
+        # http://docs.puppetlabs.com/guides/augeas.html
+        #
+        # Output from 'augtool print /files/etc/apt/sources.list', after the 'contrib' repo
+        # was manually added to the entry specified below. This output was used to construct
+        # the 'changes' path below.
         # /files/etc/apt/sources.list/1/type = "deb"
         # /files/etc/apt/sources.list/1/uri = "http://http.us.debian.org/debian"
-        # /files/etc/apt/sources.list/1/distribution = "wheezy"
+        # /files/etc/apt/sources.list/1/distribution = "wheezy" # For Debian 7 'wheezy'; will vary by release
         # /files/etc/apt/sources.list/1/component[1] = "main"
         # /files/etc/apt/sources.list/1/component[2] = "contrib"
-        require   => Exec[ 'Download Oracle Java archive file' ],
+        #
+        # FIXME: the following path makes some positional assumptions and thus is brittle;
+        # it can and should be improved:
+        changes => "set /1[type = 'deb' and uri = 'http://http.us.debian.org/debian']/component[2] contrib",
+        require => Exec[ 'Download Oracle Java archive file' ],
       }
 
       exec { 'Update apt-get to reflect the new repository configuration' :
@@ -252,6 +259,8 @@ class cspace_java {
         require   => Package[ 'Install java-package' ],
       }
       
+      # Install and run an Expect script, which is stored the top-level 'files' directory
+      # in the current module.
       $script_source_path = 'puppet:///modules/cspace_java'
       $script_name        = 'make-jpkg-oraclejava.exp'
       $script_path        = "${script_source_path}/${script_name}"
@@ -304,7 +313,7 @@ class cspace_java {
         logoutput => on_failure,
         require   => Notify[ 'Installing Debian package for Oracle Java' ],
       } 
-    
+          
     }
   
     Ubuntu: {
@@ -376,16 +385,6 @@ class cspace_java {
   # provide advantages over Exec-based management here.
   
   case $os_family {
-
-    # At least with Ubuntu 13.10, the installation process set
-    # up 'alternatives' pointing to
-    # /usr/lib/jvm/java-7-oracle/jre/bin/java and
-    # /usr/lib/jvm/java-7-oracle/bin/javac
-    #
-    # For this reason, we won't set these up explicitly here, unless we
-    # determine that older Ubuntu releases may still require that.
-    Debian: {
-    }
     
     RedHat: {
       
@@ -402,6 +401,7 @@ class cspace_java {
         target_dir => $java_target_dir,
         source_dir => $java_source_dir,
         before     => Alternatives-config [ 'java', 'javac' ],
+        require    => Exec[ 'Install and upgrade Oracle Java RPM package' ],
       }
 
       # Uses custom 'alternatives-config' resource defined above.
@@ -415,5 +415,41 @@ class cspace_java {
     }
     
   } # end case $os_family
+  
+  case $::operatingsystem {
+        
+    Debian: {
+
+      # TODO: Determine whether there's some non-hard-coded way to identify these paths.
+      $java_target_dir  = '/usr/bin' # where to install aliases to java executables
+      $java_source_dir  = "/usr/lib/jvm/j2sdk1.${java_version}-oracle/bin" # where to find these executables
+      
+      # Uses custom 'alternatives-install' resource defined above.
+      # See http://stackoverflow.com/a/6403457 for this looping technique
+      alternatives-install { [ 'java', 'javac' ]:
+        target_dir => $java_target_dir,
+        source_dir => $java_source_dir,
+        before     => Alternatives-config [ 'java', 'javac' ],
+        require    => Exec[ 'Install Debian package to install Oracle Java' ],
+      }
+
+      # Uses custom 'alternatives-config' resource defined above.
+      alternatives-config { [ 'java', 'javac' ]:
+        source_dir => $java_source_dir,
+      }        
+      
+    }
+      
+    # At least with Ubuntu 13.10, the installation process set
+    # up 'alternatives' pointing to
+    # /usr/lib/jvm/java-7-oracle/jre/bin/java and
+    # /usr/lib/jvm/java-7-oracle/bin/javac
+    #
+    # For this reason, we won't set these up explicitly here, unless we
+    # determine that older or new Ubuntu releases may require doing so.
+    Ubuntu: {
+    }
+    
+  } # end case $::operatingsystem
   
 }
