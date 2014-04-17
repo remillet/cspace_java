@@ -44,10 +44,11 @@ include stdlib # for join()
 
 class cspace_java {
 
-  $os_family        = $cspace_environment::osfamily::os_family
-  $linux_exec_paths = $cspace_environment::execpaths::linux_default_exec_paths
-  $osx_exec_paths   = $cspace_environment::execpaths::osx_default_exec_paths
-  $temp_dir         = $cspace_environment::tempdir::system_temp_directory
+  $os_family                 = $cspace_environment::osfamily::os_family
+  $linux_exec_paths          = $cspace_environment::execpaths::linux_default_exec_paths
+  $linux_combined_exec_paths = $cspace_environment::execpaths::linux_combined_exec_paths
+  $osx_exec_paths            = $cspace_environment::execpaths::osx_default_exec_paths
+  $temp_dir                  = $cspace_environment::tempdir::system_temp_directory
   
   # Define a custom resource to install commands via the Linux 'alternatives' system.
   define alternatives-install ( $cmd = $title, $target_dir, $source_dir, $priority = '20000' ) {
@@ -155,7 +156,7 @@ class cspace_java {
         ]
       )
             
-      exec { 'Download Oracle Java package':
+      exec { 'Download Oracle Java archive file':
         command   => $download_cmd,
         cwd       => $temp_dir, # may be redundant with --directory-prefix in 'wget' command
         path      => $exec_paths,
@@ -179,7 +180,7 @@ class cspace_java {
         command   => "chmod a+x ${temp_dir}/${jdk_filename}",
         path      => $exec_paths,
         logoutput => on_failure,
-        require   => Exec[ 'Download Oracle Java package' ],
+        require   => Exec[ 'Download Oracle Java archive file' ],
       }
       
       # Installs and removes any older versions.
@@ -229,7 +230,7 @@ class cspace_java {
         # /files/etc/apt/sources.list/1/distribution = "wheezy"
         # /files/etc/apt/sources.list/1/component[1] = "main"
         # /files/etc/apt/sources.list/1/component[2] = "contrib"
-        require   => Exec[ 'Download Oracle Java package' ],
+        require   => Exec[ 'Download Oracle Java archive file' ],
       }
 
       exec { 'Update apt-get to reflect the new repository configuration' :
@@ -244,34 +245,65 @@ class cspace_java {
         name      => 'java-package',
         require   => Exec[ 'Update apt-get to reflect the new repository configuration' ],
       }
-    
-      # The following are (untested and known to be partly incorrect) placeholders for
-      # additional steps required to install Oracle Java 7 on Debian:
-    
-      # exec { 'Store interactive responses required for automation of make-jpkg' :
-      # NOTE: the following command is incorrect for doing so; we need to work out the correct
-      # debconf-set-selections values or another equivalent approach.  There is one prompt
-      # at which pressing a 'y' and the Enter key (CR?) is required, and a second prompt at
-      # which pressing the Enter key by itself is required.  For some possible hints,
-      # see http://unix.stackexchange.com/a/106553
-      #   command   => 'echo oracle-java7-installer shared/accepted-oracle-license-v1-1 select true | debconf-set-selections',
-      #   path      => $exec_paths,
-      #   logoutput => on_failure,
-      #   require   => Package[ 'Install java-package' ],
-      # }
-      # 
-      # exec { 'Create a Debian installer from the Oracle Java tarball' :
-      #   command   => "make-jpkg ${$jdk_filename}",
-      #   cwd       => $temp_dir,
-      #   path      => $exec_paths,
-      #   logoutput => on_failure,
-      #   require   => Exec[ 'Store interactive responses required for automation of make-jpkg' ],
-      # }
-      #
-      # Via another exec resource here, launch the Debian package manager;
-      # e.g. sudo dpkg -i oracle-j2sdk1.7_1.7.0+update55_i386.deb
-      # finding this file via the filename convention (also brittle)
-      # for the .deb file created via 'make-jpkg'
+      
+      package { 'Install expect' :
+        ensure    => installed,
+        name      => 'expect',
+        require   => Package[ 'Install java-package' ],
+      }
+      
+      $script_source_path = 'puppet:///modules/cspace_java'
+      $script_name        = 'make-jpkg-oraclejava.exp'
+      $script_path        = "${script_source_path}/${script_name}"
+      
+      file { 'Create expect script file':
+        path    => "${temp_dir}/${script_name}",
+        source  => $script_path,
+        mode    => '755',
+        require => Package[ 'Install expect' ],
+      }
+      
+      # Run an expect script to invoke 'make-jpkg', to generate a .deb package
+      # file for installing Oracle Java 7 from Oracle's binary tarball (.tar.gz) file
+      # for that Java release. The expect script provides responses at various
+      # interactive prompts, allowing 'make-jpkg' to run unattended.
+      notify { 'Creating Debian package for Oracle Java':
+        message => 'Creating a Debian package from an Oracle Java archive file. This may take a few minutes ...',
+        require => File[ 'Create expect script file' ],
+      }
+      exec { 'Run expect script to make Debian package from Oracle Java archive file':
+        # Add a '-d' flag to the 'expect' command below to debug the Expect script, if needed.
+        command     => "expect -f ${script_name} ${jdk_filename}",
+        cwd         => $temp_dir,
+        # make-jpkg needs to run as a non-root user; the non-privileged 'nobody' user appears
+        # to work adequately for that purpose.
+        user        => 'nobody',
+        path        => $linux_combined_exec_paths,
+        logoutput   => on_failure,
+        require     => Notify[ 'Creating Debian package for Oracle Java' ],
+      }
+      
+      $build_architecture = $os_bits ? {
+          32-bit => 'i386',
+          64-bit => 'amd64',
+      }
+      # The following reflects file naming conventions currently used by the
+      # 'make-jpkg' script. This code will break and require modification if
+      # any of the script's conventions change.
+      # E.g. oracle-j2sdk1.7_1.7.0+update55_i386.deb
+      $debian_package_name = "oracle-j2sdk1.${java_version}_1.${java_version}.0+update${update_number}_${build_architecture}.deb"
+      
+      notify { 'Installing Debian package for Oracle Java':
+        message => 'Installing Debian package for Oracle Java. This may take a few minutes ...',
+        require => Exec[ 'Run expect script to make Debian package from Oracle Java archive file' ],
+      }
+      exec { 'Install Debian package to install Oracle Java':
+        command   => "dpkg --install ${debian_package_name}",
+        cwd       => $temp_dir,
+        path      => $linux_combined_exec_paths,
+        logoutput => on_failure,
+        require   => Notify[ 'Installing Debian package for Oracle Java' ],
+      } 
     
     }
   

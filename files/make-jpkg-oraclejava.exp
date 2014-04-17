@@ -1,0 +1,39 @@
+#!/usr/bin/env expect
+
+# 'expect' script to run the Debian 'make-jpkg' command
+# against a specified file, to create a .deb package from
+# a binary distribution (e.g. .tar.gz file) of Oracle Java.
+# That .deb package can then be used to install Java.
+#
+# This script sends appropriate responses at two interactive
+# prompts, allowing the command to run unattended.
+
+set timeout 180
+
+# Accept a single command line argument,
+# saving its value in a variable
+
+set packagefile [lindex $argv 0]
+
+# Command to run
+#
+# The make-jpgk script is required to be run by a non-root
+# user, using fakeroot; for background on the latter, see
+# http://freecode.com/projects/fakeroot
+
+spawn fakeroot make-jpkg $packagefile
+
+# Strings to expect and responses to send
+#
+# Square brackets in expected strings are escaped below, per
+# http://sourceforge.net/p/expect/discussion/41514/thread/da0e123a/
+
+expect "Is this correct \\\[Y/n\\\]: "
+send "y\r"
+
+expect "Press \\\[Return\\\] to continue: "
+send "\r"
+
+# Allow spawned command to run unattended thereafter
+
+expect
