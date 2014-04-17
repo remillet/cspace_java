@@ -258,8 +258,8 @@ class cspace_java {
         require   => Package[ 'Install java-package' ],
       }
       
-      # Install and run an Expect script, which is stored the top-level 'files' directory
-      # in the current module.
+      # Install and run an Expect script, which is stored in the top-level
+      # 'files' directory in the current module.
       $script_source_path = 'puppet:///modules/cspace_java'
       $script_name        = 'make-jpkg-oraclejava.exp'
       $script_path        = "${script_source_path}/${script_name}"
@@ -291,13 +291,13 @@ class cspace_java {
         require     => Notify[ 'Creating Debian package for Oracle Java' ],
       }
       
+      # The following reflects file naming conventions currently used by the
+      # 'make-jpkg' script. This code will break and require modification if
+      # any of the script's conventions change.
       $build_architecture = $os_bits ? {
           32-bit => 'i386',
           64-bit => 'amd64',
       }
-      # The following reflects file naming conventions currently used by the
-      # 'make-jpkg' script. This code will break and require modification if
-      # any of the script's conventions change.
       # E.g. oracle-j2sdk1.7_1.7.0+update55_i386.deb
       $debian_package_name = "oracle-j2sdk1.${java_version}_1.${java_version}.0+update${update_number}_${build_architecture}.deb"
       
