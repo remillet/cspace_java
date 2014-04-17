@@ -220,8 +220,7 @@ class cspace_java {
       # For this technique, see:
       # https://wiki.debian.org/JavaPackage
     
-      augeas { "Add Debian contrib APT repository":
-        context => '/files/etc/apt/sources.list',
+      augeas { 'Add Debian contrib APT repository':
         # See documentation on constructing Augeas paths at
         # http://docs.puppetlabs.com/guides/augeas.html
         #
@@ -236,7 +235,7 @@ class cspace_java {
         #
         # FIXME: the following path makes some positional assumptions and thus is brittle;
         # it can and should be improved:
-        changes => "set /1[type = 'deb' and uri = 'http://http.us.debian.org/debian']/component[2] contrib",
+        changes => "set /files/etc/apt/sources.list/1[type = 'deb' and uri = 'http://http.us.debian.org/debian']/component[2] contrib",
         require => Exec[ 'Download Oracle Java archive file' ],
       }
 
