@@ -126,24 +126,24 @@ class cspace_java {
       # later be installed alongside OpenJDK.
     
       # TODO: Determine whether there's some non-hard-coded way to identify these paths.
-      $java_target_dir  = '/usr/bin' # where to install aliases to java executables
-      $java_source_dir  = "/usr/lib/jvm/java-7-openjdk-i386/bin" # where to find these executables
+#      $java_target_dir  = '/usr/bin' # where to install aliases to java executables
+#      $java_source_dir  = "/usr/lib/jvm/java-7-openjdk-i386/bin" # where to find these executables
       
       # TODO: Investigate possible use of the Ubuntu 'update-java-alternatives' command.
   
       # Uses custom 'alternatives-install' resource defined above.
       # See http://stackoverflow.com/a/6403457 for this looping technique
-      alternatives-install { [ 'java', 'javac' ]:
-        target_dir => $java_target_dir,
-        source_dir => $java_source_dir,
-        before     => Alternatives-config [ 'java', 'javac' ],
-        require    => Package[ 'Install OpenJDK 7' ],
-      }
+ #     alternatives-install { [ 'java', 'javac' ]:
+ #       target_dir => $java_target_dir,
+ #       source_dir => $java_source_dir,
+ #       before     => Alternatives-config [ 'java', 'javac' ],
+ #       require    => Package[ 'Install OpenJDK 7' ],
+ #     }
 
       # Uses custom 'alternatives-config' resource defined above.
-      alternatives-config { [ 'java', 'javac' ]:
-        source_dir => $java_source_dir,
-      }
+ #     alternatives-config { [ 'java', 'javac' ]:
+ #       source_dir => $java_source_dir,
+ #     }
     
     }
     
